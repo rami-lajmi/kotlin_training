@@ -4,6 +4,9 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.EditText
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -31,6 +34,11 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener{
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val fab: View = findViewById(R.id.fab)
+        fab.setOnClickListener { view ->
+            withEditText(view)
+        }
 
         //Network request
         val retrofit: Retrofit = generateRetrofitBuilder()
@@ -145,5 +153,17 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener{
             .addConverterFactory(GsonConverterFactory.create())
             .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
             .build()
+    }
+
+    fun withEditText(view: View) {
+        val builder = AlertDialog.Builder(this)
+        val inflater = layoutInflater
+        builder.setTitle("With EditText")
+        val dialogLayout = inflater.inflate(R.layout.alert_dialog_add_news, null)
+        val titleNews  = dialogLayout.findViewById<EditText>(R.id.newsTitleInput)
+        val descNews  = dialogLayout.findViewById<EditText>(R.id.newsDescInupt)
+        builder.setView(dialogLayout)
+        builder.setPositiveButton("OK") { dialogInterface, i -> Toast.makeText(applicationContext, "News added", Toast.LENGTH_SHORT).show() }
+        builder.show()
     }
 }
