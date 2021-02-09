@@ -1,18 +1,21 @@
 package com.example.todolist
 
-import android.content.Context
-import androidx.*
-import com.example.todolist.R
+import android.content.Intent
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebView
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat.startActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.squareup.picasso.Picasso
-import com.example.todolist.Article
+import io.reactivex.subjects.PublishSubject
 import kotlinx.android.synthetic.main.item_article.view.*
+
 
 class ArticleAdapter(
     private var articleList: ArrayList<Article>
@@ -31,9 +34,32 @@ class ArticleAdapter(
 
     override fun onBindViewHolder(articleViewHolder: ArticleViewHolder, itemIndex: Int) {
         val article: Article = articleList.get(itemIndex)
+        var artObj = PublishSubject.create<Article>()
+        val url = "https://stackoverflow.com/"
+        lateinit var webView: WebView
+
         setPropertiesForArticleViewHolder(articleViewHolder, article)
-        articleViewHolder.cardView.setOnClickListener {
-        }
+
+        articleViewHolder.cardView.setOnClickListener(object :View.OnClickListener{
+            override fun onClick(v: View?) {
+                val activity = v!!.context as AppCompatActivity
+                val btnLike = activity.findViewById<View>(R.id.likeBtnNews)
+                btnLike.setBackgroundResource(R.drawable.likered)
+                btnLike.invalidate()
+                val AddNewsFragment = AddNewsFragment(artObj)
+                val url = article.url
+                val intent = Intent(Intent.ACTION_VIEW)
+                intent.data = Uri.parse(url)
+
+                activity.startActivity(intent)
+
+                /*activity.supportFragmentManager.beginTransaction().apply {
+                    replace(R.id.fragmentContainer, AddNewsFragment).commit()
+                }*/
+            }
+        })
+
+
     }
 
     private fun setPropertiesForArticleViewHolder(articleViewHolder: ArticleViewHolder, article: Article) {

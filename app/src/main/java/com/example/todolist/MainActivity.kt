@@ -1,161 +1,35 @@
 package com.example.todolist
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import android.view.View
-import android.widget.EditText
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import androidx.recyclerview.widget.DefaultItemAnimator
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.observers.DisposableObserver
-import io.reactivex.schedulers.Schedulers
-import kotlinx.android.synthetic.main.activity_main.*
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener{
+class MainActivity : AppCompatActivity(){
 
-    private val ENDPOINT_URL by lazy { "https://newsapi.org/v2/" }
-    private lateinit var topHeadlinesEndpoint: TopHeadlinesEndpoint
-    private lateinit var newsApiConfig: String
-    private lateinit var articleAdapter: ArticleAdapter
-    private lateinit var articleList: ArrayList<Article>
-    private lateinit var userKeyWordInput: String
-    private lateinit var topHeadlinesObservable: Observable<TopHeadlines>
-    private lateinit var compositeDisposable: CompositeDisposable
-
+    //observers & observable
+    //creation -> observation -> emtteur depuis une autre activity -> observtion/transformation inside main view
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val fab: View = findViewById(R.id.fab)
-        fab.setOnClickListener { view ->
-            withEditText(view)
-        }
+        val NewsListFragment = NewsListFragment()
 
-        //Network request
-        val retrofit: Retrofit = generateRetrofitBuilder()
-        topHeadlinesEndpoint = retrofit.create(TopHeadlinesEndpoint::class.java)
-        newsApiConfig = resources.getString(R.string.api_key)
-        swipe_refresh.setOnRefreshListener(this)
-        swipe_refresh.setColorSchemeResources(R.color.black)
-        articleList = ArrayList()
-        articleAdapter = ArticleAdapter(articleList)
-        //When the app is launched of course the user input is empty.
-        userKeyWordInput = ""
-        //CompositeDisposable is needed to avoid memory leaks
-        compositeDisposable = CompositeDisposable()
-        recycler_view.setHasFixedSize(true)
-        recycler_view.layoutManager = LinearLayoutManager(this)
-        recycler_view.itemAnimator = DefaultItemAnimator()
-        recycler_view.adapter = articleAdapter
-
-        compositeDisposable = CompositeDisposable()
-        recycler_view.setHasFixedSize(true)
-        recycler_view.layoutManager = LinearLayoutManager(this)
-        recycler_view.itemAnimator = DefaultItemAnimator()
-        recycler_view.adapter = articleAdapter
-    }
-
-    override fun onStart() {
-        super.onStart()
-        checkUserKeywordInput()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        compositeDisposable.clear()
-    }
-
-    override fun onRefresh() {
-        checkUserKeywordInput()
-    }
-
-    private fun checkUserKeywordInput() {
-        if (userKeyWordInput.isEmpty()) {
-            queryTopHeadlines()
-        } else {
-            getKeyWordQuery(userKeyWordInput)
+        supportFragmentManager.beginTransaction().apply {
+            replace(R.id.fragmentContainer, NewsListFragment).
+                    commit()
         }
     }
 
-    private fun getKeyWordQuery(userKeywordInput: String) {
-        swipe_refresh.isRefreshing = true
-        if (userKeywordInput != null && userKeywordInput.isNotEmpty()) {
-            topHeadlinesObservable = topHeadlinesEndpoint.getUserSearchInput(newsApiConfig, userKeywordInput)
-            subscribeObservableOfArticle()
-        } else {
-            queryTopHeadlines()
-        }
+    fun initializeCustomActionBar() {
+        val actionBar: ActionBar? = this.supportActionBar
+        actionBar?.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM)
+        actionBar?.setDisplayShowCustomEnabled(true)
+        actionBar?.setCustomView(R.menu.nav_menu)
     }
 
-    private fun queryTopHeadlines() {
-        swipe_refresh.isRefreshing = true
-        topHeadlinesObservable = topHeadlinesEndpoint.getTopHeadlines("us", newsApiConfig)
-        subscribeObservableOfArticle()
-    }
-
-    private fun subscribeObservableOfArticle() {
-        articleList.clear()
-        compositeDisposable.add(
-                topHeadlinesObservable.subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .flatMap {
-                            Observable.fromIterable(it.articles)
-                        }
-                        .subscribeWith(createArticleObserver())
-        )
-    }
-
-    private fun createArticleObserver(): DisposableObserver<Article> {
-        return object : DisposableObserver<Article>() {
-            override fun onNext(article: Article) {
-                if (!articleList.contains(article)) {
-                    articleList.add(article)
-                }
-            }
-
-            override fun onComplete() {
-                showArticlesOnRecyclerView()
-            }
-
-            override fun onError(e: Throwable) {
-                Log.e("createArticleObserver", "Article error: ${e.message}")
-            }
-        }
-    }
-
-    private fun showArticlesOnRecyclerView() {
-        if (articleList.size > 0) {
-            empty_text.visibility = View.GONE
-            retry_fetch_button.visibility = View.GONE
-            recycler_view.visibility = View.VISIBLE
-            articleAdapter.setArticles(articleList)
-        } else {
-            recycler_view.visibility = View.GONE
-            empty_text.visibility = View.VISIBLE
-            retry_fetch_button.visibility = View.VISIBLE
-            retry_fetch_button.setOnClickListener { checkUserKeywordInput() }
-        }
-        swipe_refresh.isRefreshing = false
-    }
-
-    private fun generateRetrofitBuilder(): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl(ENDPOINT_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-            .build()
-    }
-
-    fun withEditText(view: View) {
+    //alertDialog with editText OLD
+    /*fun withEditText(view: View) {
         val builder = AlertDialog.Builder(this)
         val inflater = layoutInflater
         builder.setTitle("With EditText")
@@ -163,7 +37,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener{
         val titleNews  = dialogLayout.findViewById<EditText>(R.id.newsTitleInput)
         val descNews  = dialogLayout.findViewById<EditText>(R.id.newsDescInupt)
         builder.setView(dialogLayout)
-        builder.setPositiveButton("OK") { dialogInterface, i -> Toast.makeText(applicationContext, "News added", Toast.LENGTH_SHORT).show() }
+        builder.setPositiveButton("OK") { dialogInterface, i -> val newsSourceToAdd = Source("ramiNews01","ramiDaily"); val newsToAdd = Article(newsSourceToAdd, "Rami LAJMI", titleNews.text.toString(),"FFSQDSQDSQDQSDQDQSD","aeaeaeaea","eaeaeaea","eaeaeaea",descNews.text.toString()); articleList.add(newsToAdd); Toast.makeText(applicationContext, "News added", Toast.LENGTH_SHORT).show() }
         builder.show()
-    }
+    }*/
 }

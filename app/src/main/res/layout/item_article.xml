@@ -42,6 +42,16 @@
             android:paddingEnd="8dp"
             android:paddingBottom="8dp"/>
 
+        <ImageButton
+            android:id="@+id/likeBtnNews"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="?selectableItemBackgroundBorderless"
+            android:scaleType="fitXY"
+            android:src="@drawable/likeimgbtnfalse"
+            android:translationX="10dp"
+            android:translationY="-5dp" />
+
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
